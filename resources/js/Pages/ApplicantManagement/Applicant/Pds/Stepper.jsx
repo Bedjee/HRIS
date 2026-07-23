@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import PersonalInfo from './Sections/PersonalInfo';
 import Addresses from './Sections/Addresses';
-import FamilyMembers from './Sections/FamilyMembers';
+import FamilyBackground  from './Sections/FamilyBackground';
 import Education from './Sections/Education';
 import Eligibility from './Sections/Eligibility';
 import WorkExperience from './Sections/WorkExperience';
@@ -54,7 +54,7 @@ const sections = [
 const componentMap = {
     personal: PersonalInfo,
     addresses: Addresses,
-    family: FamilyMembers,
+    family: FamilyBackground,
     education: Education,
     eligibility: Eligibility,
     experience: WorkExperience,
@@ -69,18 +69,28 @@ const componentMap = {
 
 export default function Stepper() {
     const { applicant } = usePage().props;
-    const [currentStep, setCurrentStep] = useState(0);
     const totalSteps = sections.length;
     const scrollContainerRef = useRef(null);
 
-    const isEditable = ['invited', 'pds_in_progress'].includes(applicant.status);
-    const isSubmitted = applicant.status === 'pds_submitted';
-    const isReadonly = isSubmitted;
+    // ✅ Read step from URL (e.g., ?step=family)
+    const getStepFromUrl = () => {
+        if (typeof window === 'undefined') return 0;
+        const params = new URLSearchParams(window.location.search);
+        const stepParam = params.get('step');
+        const index = sections.findIndex((s) => s.id === stepParam);
+        return index >= 0 ? index : 0;
+    };
 
-    const CurrentComponent = componentMap[sections[currentStep].id];
+    const [currentStep, setCurrentStep] = useState(getStepFromUrl);
 
+    // ✅ Update URL when step changes (without page reload)
     const goToStep = (index) => {
-        if (index >= 0 && index < totalSteps) setCurrentStep(index);
+        if (index >= 0 && index < totalSteps) {
+            setCurrentStep(index);
+            const url = new URL(window.location.href);
+            url.searchParams.set('step', sections[index].id);
+            window.history.replaceState({}, '', url);
+        }
     };
 
     const nextStep = () => goToStep(currentStep + 1);
@@ -92,7 +102,12 @@ export default function Stepper() {
         return 'pending';
     };
 
-    // Auto‑scroll to active step
+    const isEditable = ['invited', 'pds_in_progress'].includes(applicant.status);
+    const isSubmitted = applicant.status === 'pds_submitted';
+    const isReadonly = isSubmitted;
+    const CurrentComponent = componentMap[sections[currentStep].id];
+
+    // Auto‑scroll to the active step when it changes
     useEffect(() => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
@@ -106,6 +121,8 @@ export default function Stepper() {
             }
         }
     }, [currentStep]);
+
+
 
     // Not invited state
     if (!isEditable && !isSubmitted) {

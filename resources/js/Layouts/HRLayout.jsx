@@ -1,4 +1,3 @@
-// resources/js/Layouts/HRLayout.jsx
 import { useState } from 'react';
 import { Link, usePage, useForm } from '@inertiajs/react';
 import Logo from '@/Components/Logo';
@@ -57,17 +56,35 @@ export default function HRLayout({ children }) {
                             {/* More HR links can be added here later */}
                         </div>
 
-                        <div className="flex items-center">
-                            <button
-                                onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
-                                className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
-                            >
-                                <User className="h-5 w-5 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700 hidden sm:inline">{user.name}</span>
-                                <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
+                        {/* ✅ User dropdown – desktop */}
+                        <div className="hidden sm:flex sm:items-center sm:ml-6">
+                            <div className="relative ml-3">
+                                <button
+                                    onClick={() => setShowingNavigationDropdown(!showingNavigationDropdown)}
+                                    className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                                >
+                                    <User className="h-5 w-5 text-gray-600" />
+                                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                                    <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+
+                                {showingNavigationDropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                        <button
+                                            onClick={() => {
+                                                setShowingNavigationDropdown(false);
+                                                setShowLogoutModal(true);
+                                            }}
+                                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                                        >
+                                            <LogOut className="h-4 w-4 mr-2" />
+                                            Log Out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Mobile menu button */}

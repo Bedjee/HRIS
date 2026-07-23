@@ -32,13 +32,18 @@ class ApplicantService
     }
 
     public function updatePersonalInfo(Applicant $applicant, array $data): ApplicantPersonalInformation
-    {
-        $this->ensureEditable($applicant);
-        return $applicant->personalInformation()->updateOrCreate(
-            ['applicant_id' => $applicant->id],
-            $data
-        );
-    }
+{
+    $this->ensureEditable($applicant);
+
+    // ✅ Transform empty strings to "N/A" for nullable text fields
+    $data = $this->preparePersonalInfoData($data);
+
+    return $applicant->personalInformation()->updateOrCreate(
+        ['applicant_id' => $applicant->id],
+        $data
+    );
+}
+
 
     public function addAddress(Applicant $applicant, array $data): ApplicantAddress
     {
@@ -59,10 +64,21 @@ class ApplicantService
     }
 
     public function addEligibility(Applicant $applicant, array $data): ApplicantEligibility
-    {
-        $this->ensureEditable($applicant);
-        return $applicant->eligibilities()->create($data);
+{
+    $this->ensureEditable($applicant);
+
+    // Convert empty strings to NULL for nullable fields
+    $nullableFields = ['rating', 'exam_date', 'exam_place', 'license_number', 'valid_until'];
+    foreach ($nullableFields as $field) {
+        if (array_key_exists($field, $data) && $data[$field] === '') {
+            $data[$field] = null;
+        }
     }
+
+    return $applicant->eligibilities()->create($data);
+}
+
+
 
     public function addWorkExperience(Applicant $applicant, array $data): ApplicantWorkExperience
     {
@@ -117,43 +133,74 @@ public function updateQuestionnaire(Applicant $applicant, array $data): Applican
     return $result;
 }
 
-    public function addReference(Applicant $applicant, array $data): ApplicantReference
-    {
-        $this->ensureEditable($applicant);
-        return $applicant->references()->create($data);
+   public function addReference(Applicant $applicant, array $data): ApplicantReference
+{
+    $this->ensureEditable($applicant);
+
+    // Count existing references (excluding skipped ones)
+    $existingCount = $applicant->references()->where('is_skipped', false)->count();
+    if ($existingCount >= 3) {
+        throw ValidationException::withMessages([
+            'reference' => 'You have already added the maximum of 3 references.'
+        ]);
     }
 
-    public function submitPds(Applicant $applicant): void
-    {
-        // Check if all required sections are present (simplified example)
-        $requiredSections = [
-            'personalInformation',
-            'addresses',
-            'familyMembers',
-            'educations',
-            'questionnaire',
-        ];
+    return $applicant->references()->create($data);
+}
 
-        $missing = [];
-        foreach ($requiredSections as $section) {
-            if ($section === 'addresses') {
-                if ($applicant->addresses()->count() < 2) {
-                    $missing[] = 'Both Residential and Permanent addresses are required.';
-                }
-            } elseif ($applicant->{$section}()->count() === 0) {
+
+
+
+    public function submitPds(Applicant $applicant): void
+{
+    // ✅ Add 'references' to the required sections array
+    $requiredSections = [
+        'personalInformation',
+        'addresses',
+        'father',
+        'mother',
+        'educations',
+        'questionnaire',
+        'references',   // 👈 now required
+    ];
+
+    $missing = [];
+    foreach ($requiredSections as $section) {
+        if ($section === 'references') {
+            // Check exactly 3 references (excluding skipped ones, if any)
+            $count = $applicant->references()->where('is_skipped', false)->count();
+            if ($count !== 3) {
+                $missing[] = 'Exactly 3 references are required.';
+            }
+        } elseif ($section === 'addresses') {
+            if ($applicant->addresses()->count() < 2) {
+                $missing[] = 'Both Residential and Permanent addresses are required.';
+            }
+        } elseif ($section === 'father' || $section === 'mother') {
+            if ($applicant->$section === null) {
+                $missing[] = ucfirst($section) . ' information is required.';
+            }
+        } else {
+            // For other sections that are relationships (e.g., educations, questionnaire)
+            if ($applicant->{$section}()->count() === 0) {
                 $missing[] = ucfirst(str_replace('_', ' ', $section)) . ' is required.';
             }
         }
-
-        if (!empty($missing)) {
-            throw ValidationException::withMessages(['missing' => $missing]);
-        }
-
-        $applicant->update([
-            'status' => 'pds_submitted',
-            'submitted_at' => now(),
-        ]);
     }
+
+    if (!empty($missing)) {
+        throw ValidationException::withMessages(['missing' => $missing]);
+    }
+
+    $applicant->update([
+        'status' => 'pds_submitted',
+        'submitted_at' => now(),
+    ]);
+}
+
+
+
+
 
     public function verify(Applicant $applicant): void
     {
@@ -177,4 +224,38 @@ public function updateQuestionnaire(Applicant $applicant, array $data): Applican
             $applicant->update(['status' => 'pds_in_progress']);
         }
     }
+
+
+    /**
+ * Prepare personal information data: replace empty strings with "N/A"
+ * for nullable text fields (excluding dates, numbers, and required fields).
+ */
+private function preparePersonalInfoData(array $data): array
+{
+    // List of fields that are nullable strings and should get "N/A" when empty
+    $nullableStringFields = [
+        'middle_name',
+        'extension_name',
+        'dual_citizenship_type',
+        'dual_country',
+        'blood_type',
+        'philhealth_no',
+        'philsys_no',
+        'pagibig_no',
+        'tin_no',
+        'agency_employee_no',
+        'telephone',
+        'mobile',
+    ];
+
+    foreach ($nullableStringFields as $field) {
+        if (array_key_exists($field, $data) && $data[$field] === '') {
+            $data[$field] = 'N/A';
+        }
+    }
+
+    return $data;
+}
+
+
 }

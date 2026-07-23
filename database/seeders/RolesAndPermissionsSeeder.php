@@ -137,6 +137,7 @@ class RolesAndPermissionsSeeder extends Seeder
             foreach ($users as $user) {
                 $user->roles()->attach($defaultRole);
             }
+            
         }
     }
 }

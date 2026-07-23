@@ -1,6 +1,17 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
+
+// Helper: format date to "Aug 26, 2021"
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+};
 
 export default function Trainings({ applicant, readonly = false }) {
     const trainings = applicant.trainings || [];
@@ -67,7 +78,7 @@ export default function Trainings({ applicant, readonly = false }) {
                             <p className="font-medium">{t.is_skipped ? 'N/A' : t.training_title}</p>
                             {!t.is_skipped && (
                                 <>
-                                    <p className="text-sm text-gray-600">{t.date_from} - {t.date_to || 'Present'}</p>
+                                    <p className="text-sm text-gray-600">{formatDate(t.date_from)} - {t.date_to ? formatDate(t.date_to) : 'Present'}</p>
                                     {t.type && <p className="text-sm text-gray-600">Type: {t.type}</p>}
                                     {t.hours && <p className="text-sm text-gray-600">Hours: {t.hours}</p>}
                                     <p className="text-sm text-gray-500">Conducted by: {t.conducted_by}</p>
@@ -113,6 +124,15 @@ export default function Trainings({ applicant, readonly = false }) {
                 </button>
             </div>
 
+            {/* ✅ Instructional message */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Please add <strong>all</strong> relevant trainings, seminars, and workshops you have attended
+                    (both local and international). Include the title, date, hours, type, and conducting organization.
+                </p>
+            </div>
+
             {/* Training list */}
             <div className="space-y-2 mb-4">
                 {trainings.filter(t => !t.is_skipped).length > 0 ? (
@@ -136,7 +156,7 @@ export default function Trainings({ applicant, readonly = false }) {
                                 {isExpanded && (
                                     <div className="p-4 bg-white border-t border-gray-200 space-y-1 animate-fade-in">
                                         <p className="text-sm text-gray-700">
-                                            <span className="font-medium">Date:</span> {training.date_from} – {training.date_to || 'Present'}
+                                            <span className="font-medium">Date:</span> {formatDate(training.date_from)} – {training.date_to ? formatDate(training.date_to) : 'Present'}
                                         </p>
                                         {training.type && (
                                             <p className="text-sm text-gray-700">

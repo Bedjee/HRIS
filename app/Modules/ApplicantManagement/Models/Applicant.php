@@ -2,6 +2,13 @@
 
 namespace App\Modules\ApplicantManagement\Models;
 
+use App\Modules\ApplicantManagement\Models\ApplicantSpouse;
+use App\Modules\ApplicantManagement\Models\ApplicantFather;
+use App\Modules\ApplicantManagement\Models\ApplicantMother;
+use App\Modules\ApplicantManagement\Models\ApplicantChild;
+
+
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,10 +60,7 @@ class Applicant extends Model
         return $this->hasMany(ApplicantAddress::class);
     }
 
-    public function familyMembers(): HasMany
-    {
-        return $this->hasMany(ApplicantFamilyMember::class);
-    }
+
 
     public function educations(): HasMany
     {
@@ -113,6 +117,29 @@ class Applicant extends Model
         return $this->hasMany(ApplicantDocument::class);
     }
 
+
+
+
+    public function spouse(): HasOne
+{
+    return $this->hasOne(ApplicantSpouse::class);
+}
+
+public function father(): HasOne
+{
+    return $this->hasOne(ApplicantFather::class);
+}
+
+public function mother(): HasOne
+{
+    return $this->hasOne(ApplicantMother::class);
+}
+
+public function children(): HasMany
+{
+    return $this->hasMany(ApplicantChild::class);
+}
+
     // Add these methods inside the Applicant class
 
 /**
@@ -132,9 +159,7 @@ public function getCompletionPercentageAttribute(): int
     $addresses = $this->addresses;
     if ($addresses->contains('type', 'Residential') && $addresses->contains('type', 'Permanent')) $filled++;
 
-    // Family Members (at least 1)
-    $total++;
-    if ($this->familyMembers->count() > 0) $filled++;
+
 
     // Education (at least 1)
     $total++;
@@ -231,6 +256,9 @@ public function getTimelineAttribute(): array
 
     return $timeline;
 }
+
+
+
 
 
 

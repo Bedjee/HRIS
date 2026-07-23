@@ -160,23 +160,70 @@ export default function Show() {
                 )}
             </SectionCard>
 
-            <SectionCard title="Family Background" icon={Users}>
-                {applicant.family_members?.length > 0 ? (
-                    applicant.family_members.map((member) => (
-                        <div key={member.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 mb-2">
-                            <p className="font-medium">{member.full_name}</p>
-                            <p className="text-sm text-gray-600">Relationship: {member.relationship}</p>
-                            {member.occupation && <p className="text-sm text-gray-600">Occupation: {member.occupation}</p>}
-                            {/* ✅ Formatted birth date for family members */}
-                            {member.birth_date && <p className="text-sm text-gray-600">Birth: {formatDate(member.birth_date)}</p>}
+           {/* ✅ Family Background – updated */}
+        <SectionCard title="Family Background" icon={Users}>
+            {/* Spouse */}
+            {applicant.spouse && Object.keys(applicant.spouse).length > 0 ? (
+                <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p className="font-medium">Spouse</p>
+                    <p className="text-sm text-gray-600">
+                        {applicant.spouse.first_name} {applicant.spouse.surname}
+                        {applicant.spouse.occupation && ` - ${applicant.spouse.occupation}`}
+                    </p>
+                    {applicant.spouse.employer_business_name && (
+                        <p className="text-sm text-gray-600">Employer: {applicant.spouse.employer_business_name}</p>
+                    )}
+                </div>
+            ) : (
+                <p className="text-gray-500 text-sm">No spouse information provided.</p>
+            )}
+
+            {/* Father */}
+            {applicant.father && Object.keys(applicant.father).length > 0 ? (
+                <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p className="font-medium">Father</p>
+                    <p className="text-sm text-gray-600">
+                        {applicant.father.first_name} {applicant.father.surname}
+                        {applicant.father.middle_name && ` ${applicant.father.middle_name}`}
+                        {applicant.father.extension_name && ` ${applicant.father.extension_name}`}
+                    </p>
+                </div>
+            ) : (
+                <p className="text-gray-500 text-sm">No father information provided.</p>
+            )}
+
+            {/* Mother */}
+            {applicant.mother && Object.keys(applicant.mother).length > 0 ? (
+                <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p className="font-medium">Mother</p>
+                    <p className="text-sm text-gray-600">
+                        {applicant.mother.first_name} {applicant.mother.surname}
+                        {applicant.mother.middle_name && ` ${applicant.mother.middle_name}`}
+                        {applicant.mother.extension_name && ` ${applicant.mother.extension_name}`}
+                    </p>
+                </div>
+            ) : (
+                <p className="text-gray-500 text-sm">No mother information provided.</p>
+            )}
+
+            {/* Children */}
+            {applicant.children && applicant.children.length > 0 ? (
+                <div className="mt-3">
+                    <p className="font-medium">Children</p>
+                    {applicant.children.map((child) => (
+                        <div key={child.id} className="p-2 bg-white rounded border border-gray-200 mt-1">
+                            <p className="text-sm text-gray-800">{child.full_name}</p>
+                            <p className="text-xs text-gray-500">{formatDate(child.birth_date)}</p>
                         </div>
-                    ))
-                ) : (
-                    <p className="text-gray-500 text-sm">No family members listed.</p>
-                )}
-            </SectionCard>
-        </>
-    );
+                    ))}
+                </div>
+            ) : (
+                <p className="text-gray-500 text-sm mt-3">No children listed.</p>
+            )}
+        </SectionCard>
+    </>
+);
+
 
     const renderEducationWorkTab = () => (
         <>

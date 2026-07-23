@@ -42,7 +42,7 @@ Route::middleware(['auth', 'verified'])->prefix('applicant')->name('applicant.')
     $applicant->load([
         'personalInformation',
         'addresses',
-        'familyMembers',
+
         'educations',
         'eligibilities',
         'workExperiences',
@@ -71,6 +71,9 @@ Route::middleware(['auth', 'verified'])->prefix('applicant')->name('applicant.')
     // PDS Stepper
     Route::get('/pds', [PdsController::class, 'index'])->name('pds');
 
+
+Route::get('/pds/preview', [PdsController::class, 'previewPds'])->name('pds.preview');
+
     // Personal Information (single record – update only)
     Route::post('/pds/personal', [PdsController::class, 'storePersonalInfo'])->name('pds.personal');
 
@@ -78,9 +81,10 @@ Route::middleware(['auth', 'verified'])->prefix('applicant')->name('applicant.')
     // Addresses (add/update)
     Route::post('/pds/address', [PdsController::class, 'storeAddress'])->name('pds.address');
 
-    // Family Members (add/delete)
-    Route::post('/pds/family', [PdsController::class, 'storeFamilyMember'])->name('pds.family');
-    Route::delete('/pds/family/{id}', [PdsController::class, 'destroyFamilyMember'])->name('pds.family.destroy');
+    // Family Background
+Route::post('/pds/family', [PdsController::class, 'storeFamilyBackground'])->name('pds.family');
+Route::post('/pds/children', [PdsController::class, 'addChild'])->name('pds.children.add');
+Route::delete('/pds/children/{id}', [PdsController::class, 'destroyChild'])->name('pds.children.destroy');
 
     // Education (add/delete)
     Route::post('/pds/education', [PdsController::class, 'storeEducation'])->name('pds.education');
@@ -151,6 +155,10 @@ Route::post('/pds/reference/unskip', [PdsController::class, 'unskipReferences'])
     Route::delete('/pds/documents/{id}', [PdsController::class, 'destroyDocument'])->name('pds.documents.destroy');
     Route::get('/pds/documents/{id}/download', [PdsController::class, 'downloadDocument'])->name('pds.documents.download');
     Route::delete('/pds/documents/{id}', [PdsController::class, 'destroyDocument'])->name('pds.documents.destroy');
+
+
+
+
 
 
 

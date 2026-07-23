@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 // Helper: format date to "Aug 26, 2021"
 const formatDate = (dateString) => {
@@ -131,6 +131,16 @@ export default function Eligibility({ applicant, readonly = false }) {
                 >
                     Skip This Section
                 </button>
+            </div>
+
+            {/* ✅ Instructional message */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> If you have multiple civil service eligibilities (e.g., Career Service Professional,
+                    Subprofessional, etc.), please add <strong>all</strong> of them. Each eligibility should be entered as a separate record
+                    with its corresponding details.
+                </p>
             </div>
 
             <div className="space-y-2 mb-4">

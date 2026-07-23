@@ -7,7 +7,11 @@ use App\Modules\ApplicantManagement\Services\ApplicantService;
 use App\Modules\ApplicantManagement\Services\DocumentService;
 use App\Modules\ApplicantManagement\Requests\StorePersonalInformationRequest;
 use App\Modules\ApplicantManagement\Requests\StoreAddressRequest;
-use App\Modules\ApplicantManagement\Requests\StoreFamilyMemberRequest;
+
+
+use App\Modules\ApplicantManagement\Requests\StoreFamilyBackgroundRequest;
+use App\Modules\ApplicantManagement\Requests\StoreChildRequest;
+
 use App\Modules\ApplicantManagement\Requests\StoreEducationRequest;
 use App\Modules\ApplicantManagement\Requests\StoreEligibilityRequest;
 use App\Modules\ApplicantManagement\Requests\StoreWorkExperienceRequest;
@@ -33,6 +37,10 @@ use App\Modules\ApplicantManagement\Models\ApplicantRecognition;
 use App\Modules\ApplicantManagement\Models\ApplicantMembership;
 use App\Modules\ApplicantManagement\Models\ApplicantReference;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
+use App\Modules\ApplicantManagement\Models\ApplicantChild;
+
+use App\Modules\ApplicantManagement\Services\PDSGeneratorService;
 use Inertia\Inertia;
 
 class PdsController extends Controller
@@ -45,30 +53,33 @@ class PdsController extends Controller
     /**
      * Show the PDS stepper page.
      */
-    public function index()
-    {
-        $applicant = auth()->user()->applicant;
-        Gate::authorize('view', $applicant);
+   public function index()
+{
+    $applicant = auth()->user()->applicant;
+    Gate::authorize('view', $applicant);
 
-        return Inertia::render('ApplicantManagement/Applicant/Pds/Stepper', [
-            'applicant' => $applicant->load([
-                'personalInformation',
-                'addresses',
-                'familyMembers',
-                'educations',
-                'eligibilities',
-                'workExperiences',
-                'voluntaryWorks',
-                'trainings',
-                'skills',
-                'recognitions',
-                'memberships',
-                'questionnaire',
-                'references',
-                'documents',
-            ]),
-        ]);
-    }
+    return Inertia::render('ApplicantManagement/Applicant/Pds/Stepper', [
+        'applicant' => $applicant->load([
+            'personalInformation',
+            'addresses',
+            'spouse',      // ✅ new
+            'father',      // ✅ new
+            'mother',      // ✅ new
+            'children',    // ✅ new
+            'educations',
+            'eligibilities',
+            'workExperiences',
+            'voluntaryWorks',
+            'trainings',
+            'skills',
+            'recognitions',
+            'memberships',
+            'questionnaire',
+            'references',
+            'documents',
+        ]),
+    ]);
+}
 
     // ================================================
     // STORE METHODS – Single Record Updates
@@ -98,15 +109,53 @@ class PdsController extends Controller
         return redirect()->route('applicant.pds')->with('success', 'Address added.');
     }
 
-    public function storeFamilyMember(StoreFamilyMemberRequest $request)
-    {
-        $applicant = auth()->user()->applicant;
-        Gate::authorize('update', $applicant);
+public function storeFamilyBackground(StoreFamilyBackgroundRequest $request)
+{
+    $applicant = auth()->user()->applicant;
+    Gate::authorize('update', $applicant);
 
-        $this->applicantService->addFamilyMember($applicant, $request->validated());
 
-        return redirect()->route('applicant.pds')->with('success', 'Family member added.');
-    }
+
+
+  $validated = $request->validated();
+
+    // Update or create spouse
+    $applicant->spouse()->updateOrCreate(
+        ['applicant_id' => $applicant->id],
+        $validated['spouse'] ?? []
+    );
+
+    // Update or create father
+    $applicant->father()->updateOrCreate(
+        ['applicant_id' => $applicant->id],
+        $validated['father']
+    );
+
+    // Update or create mother
+    $applicant->mother()->updateOrCreate(
+        ['applicant_id' => $applicant->id],
+        $validated['mother']
+    );
+
+    return redirect()->back()->with('success', 'Family background saved.');
+}
+
+public function addChild(StoreChildRequest $request)
+{
+    $validated = $request->validated();
+    \Log::info('Child data validated:', $validated);
+
+    $applicant = auth()->user()->applicant;
+    Gate::authorize('update', $applicant);
+
+    $child = $applicant->children()->create($validated);
+    \Log::info('Child saved:', $child->toArray());
+
+   return redirect()->route('applicant.pds', ['step' => 'family'])
+                 ->with('success', 'Child added.');
+
+}
+
 
     public function storeEducation(StoreEducationRequest $request)
     {
@@ -225,15 +274,7 @@ class PdsController extends Controller
     // DESTROY METHODS – Remove Individual Records
     // ================================================
 
-    public function destroyFamilyMember($id)
-    {
-        $record = ApplicantFamilyMember::findOrFail($id);
-        $applicant = $record->applicant;
-        Gate::authorize('update', $applicant);
 
-        $record->delete();
-        return redirect()->route('applicant.pds')->with('success', 'Family member removed.');
-    }
 
     public function destroyEducation($id)
     {
@@ -244,6 +285,16 @@ class PdsController extends Controller
         $record->delete();
         return redirect()->route('applicant.pds')->with('success', 'Education record removed.');
     }
+
+
+    public function destroyChild($id)
+{
+    $child = ApplicantChild::findOrFail($id);
+    $applicant = $child->applicant;
+    Gate::authorize('update', $applicant);
+    $child->delete();
+    return redirect()->back()->with('success', 'Child removed.');
+}
 
     public function destroyEligibility($id)
     {
@@ -612,6 +663,27 @@ public function unskipReferences()
     $applicant->references()->where('is_skipped', true)->delete();
 
     return redirect()->back()->with('success', 'References section is now editable.');
+}
+
+
+
+public function previewPds()
+{
+    $applicant = auth()->user()->applicant;
+    Gate::authorize('view', $applicant);
+
+    if (!$applicant->personalInformation) {
+        return redirect()->back()->with('error', 'Please complete your Personal Information first.');
+    }
+
+    try {
+        $generator = app(PDSGeneratorService::class); // now resolves correctly
+        $filePath = $generator->generatePersonalInfoPreview($applicant);
+        return response()->download($filePath, 'PDS_Preview.xlsx')->deleteFileAfterSend(true);
+    } catch (\Exception $e) {
+        \Log::error('PDS Preview Generation Error: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Failed to generate PDS preview. Please try again.');
+    }
 }
 
 }

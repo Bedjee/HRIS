@@ -1,6 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
-import typography from '@tailwindcss/typography'; // 👈 add this line
+import typography from '@tailwindcss/typography'; // optional
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -15,7 +15,11 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            // ✅ Animation inside extend
+            animation: {
+                'pulse-slow': 'pulse 1.5s ease-in-out infinite',
+            },
         },
     },
-    plugins: [forms, typography], // 👈 add typography here
+    plugins: [forms, typography], // if typography is installed
 };

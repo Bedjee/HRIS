@@ -34,6 +34,12 @@ export default function Review({ applicant, readonly = false }) {
 
     // Helper: check if section is complete (including skipped)
     const isComplete = (sectionKey) => {
+        // Handle Family Background separately – uses new structure
+        if (sectionKey === 'family_members') {
+            // Father and Mother are required; Spouse and Children optional
+            return applicant.father !== null && applicant.mother !== null;
+        }
+
         // If skipped, it's considered complete
         if (isSectionSkipped(sectionKey)) return true;
 

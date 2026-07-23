@@ -95,31 +95,34 @@ public function dashboard()
 ]);
     }
 
-    public function show(Applicant $applicant)
-    {
-        Gate::authorize('view', $applicant);
+   public function show(Applicant $applicant)
+{
+    Gate::authorize('view', $applicant);
 
-        $applicant->load([
-            'personalInformation',
-            'addresses',
-            'familyMembers',
-            'educations',
-            'eligibilities',
-            'workExperiences',
-            'voluntaryWorks',
-            'trainings',
-            'skills',
-            'recognitions',
-            'memberships',
-            'questionnaire',
-            'references',
-            'documents.verifier',
-            'user',
-        ]);
+    $applicant->load([
+        'personalInformation',
+        'addresses',
+        'spouse',      // ✅ new
+        'father',      // ✅ new
+        'mother',      // ✅ new
+        'children',    // ✅ new
+        'educations',
+        'eligibilities',
+        'workExperiences',
+        'voluntaryWorks',
+        'trainings',
+        'skills',
+        'recognitions',
+        'memberships',
+        'questionnaire',
+        'references',
+        'documents.verifier',
+        'user',
+    ]);
 
-       return Inertia::render('ApplicantManagement/HR/Applicants/Show', [
-    'applicant' => $applicant,
-]);
+    return Inertia::render('ApplicantManagement/HR/Applicants/Show', [
+        'applicant' => $applicant,
+    ]);
 
 
     }

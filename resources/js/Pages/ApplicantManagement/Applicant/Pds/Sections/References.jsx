@@ -1,12 +1,12 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 export default function References({ applicant, readonly = false }) {
     const references = applicant.references || [];
-    const isSkipped = references.some(r => r.is_skipped) || false;
-    const [isSkippedState, setIsSkippedState] = useState(isSkipped);
     const [expandedId, setExpandedId] = useState(null);
+    const referenceCount = references.filter(r => !r.is_skipped).length;
+    const isComplete = referenceCount === 3;
 
     const { data, setData, post, delete: destroy, processing, errors, reset } = useForm({
         name: '',
@@ -37,29 +37,6 @@ export default function References({ applicant, readonly = false }) {
         setExpandedId(expandedId === id ? null : id);
     };
 
-    // Skip section
-    const skipSection = () => {
-        if (!confirm('Are you sure you want to skip this section? All existing data will be removed and marked as "N/A".')) return;
-        post(route('applicant.pds.reference.skip'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsSkippedState(true);
-                reset();
-            },
-        });
-    };
-
-    // Unskip section
-    const unskipSection = () => {
-        post(route('applicant.pds.reference.unskip'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsSkippedState(false);
-                reset();
-            },
-        });
-    };
-
     // Read‑only mode
     if (readonly) {
         return (
@@ -68,13 +45,9 @@ export default function References({ applicant, readonly = false }) {
                 {references.length > 0 ? (
                     references.map((ref) => (
                         <div key={ref.id} className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <p className="font-medium">{ref.is_skipped ? 'N/A' : ref.name}</p>
-                            {!ref.is_skipped && (
-                                <>
-                                    <p className="text-sm text-gray-600">{ref.address}</p>
-                                    <p className="text-sm text-gray-500">Contact: {ref.contact}</p>
-                                </>
-                            )}
+                            <p className="font-medium">{ref.name}</p>
+                            <p className="text-sm text-gray-600">{ref.address}</p>
+                            <p className="text-sm text-gray-500">Contact: {ref.contact}</p>
                         </div>
                     ))
                 ) : (
@@ -84,49 +57,46 @@ export default function References({ applicant, readonly = false }) {
         );
     }
 
-    // Skipped state
-    if (isSkippedState) {
-        return (
-            <div>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">References</h2>
-                    <button
-                        onClick={unskipSection}
-                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        Edit Section
-                    </button>
-                </div>
-                <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500">
-                    <p>You have skipped this section. All fields have been marked as <strong>N/A</strong>.</p>
-                    <p className="text-sm mt-1">Click the <strong>"Edit Section"</strong> button above to add references.</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">References</h2>
-                <button
-                    onClick={skipSection}
-                    className="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                    Skip This Section
-                </button>
+                <span className="text-sm font-medium text-gray-500">
+                    {referenceCount} / 3
+                </span>
             </div>
 
+            {/* ✅ Instructional message */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Please provide exactly <strong>three (3)</strong> references as required by the PDS.
+                    Each reference should include the name, office/residential address, and contact number or email address.
+                </p>
+            </div>
+
+            {/* Progress indicator */}
+            {!isComplete && (
+                <p className="text-sm text-gray-600 mb-4">
+                    You have added {referenceCount} of 3 required references. Please add {3 - referenceCount} more.
+                </p>
+            )}
+            {isComplete && (
+                <p className="text-sm text-green-600 mb-4">
+                    ✅ All 3 references have been added.
+                </p>
+            )}
+
+            {/* Reference list */}
             <div className="space-y-2 mb-4">
-                {references.filter(r => !r.is_skipped).length > 0 ? (
-                    references.filter(r => !r.is_skipped).map((ref) => {
+                {references.length > 0 ? (
+                    references.map((ref) => {
                         const isExpanded = expandedId === ref.id;
                         return (
                             <div
                                 key={ref.id}
                                 className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                             >
-                                {/* Clickable header – expands/collapses */}
                                 <button
                                     onClick={() => toggleExpand(ref.id)}
                                     className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition text-left"
@@ -143,8 +113,6 @@ export default function References({ applicant, readonly = false }) {
                                         )}
                                     </div>
                                 </button>
-
-                                {/* Expandable content – full details + remove button */}
                                 {isExpanded && (
                                     <div className="p-4 bg-white border-t border-gray-200 space-y-1 animate-fade-in">
                                         <p className="text-sm text-gray-700">
@@ -175,50 +143,53 @@ export default function References({ applicant, readonly = false }) {
                 )}
             </div>
 
-            <form onSubmit={submit} className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium">Add Reference</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Name *</label>
-                        <input
-                            type="text"
-                            value={data.name}
-                            onChange={e => setData('name', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        />
-                        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            {/* Add form – only shown when fewer than 3 references */}
+            {!isComplete && (
+                <form onSubmit={submit} className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="font-medium">Add Reference</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Name *</label>
+                            <input
+                                type="text"
+                                value={data.name}
+                                onChange={e => setData('name', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Contact *</label>
+                            <input
+                                type="text"
+                                value={data.contact}
+                                onChange={e => setData('contact', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                            {errors.contact && <p className="text-red-500 text-sm mt-1">{errors.contact}</p>}
+                        </div>
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700">Address *</label>
+                            <input
+                                type="text"
+                                value={data.address}
+                                onChange={e => setData('address', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                            {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Contact *</label>
-                        <input
-                            type="text"
-                            value={data.contact}
-                            onChange={e => setData('contact', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        />
-                        {errors.contact && <p className="text-red-500 text-sm mt-1">{errors.contact}</p>}
+                    <div className="flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            {processing ? 'Saving...' : 'Add Reference'}
+                        </button>
                     </div>
-                    <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Address *</label>
-                        <input
-                            type="text"
-                            value={data.address}
-                            onChange={e => setData('address', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        />
-                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-                    </div>
-                </div>
-                <div className="flex justify-end">
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        {processing ? 'Saving...' : 'Add Reference'}
-                    </button>
-                </div>
-            </form>
+                </form>
+            )}
 
             <style jsx>{`
                 .animate-fade-in {

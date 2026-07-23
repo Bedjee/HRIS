@@ -1,4 +1,6 @@
 import { useForm } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';      // ✅ Added
+import { FileText } from 'lucide-react';     // ✅ Added
 
 export default function PersonalInfo({ applicant, readonly = false }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -187,6 +189,18 @@ export default function PersonalInfo({ applicant, readonly = false }) {
                     <button type="submit" disabled={processing} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto">
                         {processing ? 'Saving...' : 'Save Personal Information'}
                     </button>
+
+                     {/* ✅ Preview PDS button – only if personal info exists */}
+                    {applicant.personal_information && (
+                        <Link
+                            href={route('applicant.pds.preview')}
+                            className="inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition w-full sm:w-auto"
+                            download
+                        >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Preview PDS
+                        </Link>
+                    )}
                 </div>
             </form>
         </div>
